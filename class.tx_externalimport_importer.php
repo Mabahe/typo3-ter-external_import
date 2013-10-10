@@ -626,30 +626,51 @@ class tx_externalimport_importer {
 				if (empty($externalValue)) {
 					unset($records[$i][$columnName]);
 				} else {
-					if (isset($mappings[$externalValue])) {
-						$records[$i][$columnName] = $mappings[$externalValue];
 
-						// Value is not matched
-					} else {
-							// If the relation is self-referential, use a temporary key
-						if ($isSelfReferencing) {
-								// Check if a temporary key was already created for that external key
-							if (isset($this->temporaryKeys[$externalValue])) {
-								$temporaryKey = $this->temporaryKeys[$externalValue];
+					if ($mappingInformation['explode']) {
+						$explodedExternalValues = t3lib_div::trimExplode($mappingInformation['explode'], $externalValue, TRUE);
+						$mappedExternalValues = array();
+						foreach($explodedExternalValues as $explodedExternalValue) {
+							if (isset($mappings[$explodedExternalValue])) {
+								$mappedExternalValues[] = $mappings[$explodedExternalValue];
 
-								// If not, create a new temporary key
 							} else {
-								$this->newKeysCounter++;
-								$temporaryKey = 'NEW_' . $this->newKeysCounter;
-								$this->temporaryKeys[$externalValue] = $temporaryKey;
+								// TODO Value is not matched - selfReferencing
 							}
-								// Use temporary key
-							$records[$i][$columnName] = $temporaryKey;
-
-							// If the relation is not self-referential, the mapping does not point to an existing value,
-							// unset it
+						}
+						if (count($mappedExternalValues)) {
+							$records[$i][$columnName] = implode(',', $mappedExternalValues);
 						} else {
 							unset($records[$i][$columnName]);
+						}
+					} else {
+
+
+						if (isset($mappings[$externalValue])) {
+							$records[$i][$columnName] = $mappings[$externalValue];
+
+							// Value is not matched
+						} else {
+								// If the relation is self-referential, use a temporary key
+							if ($isSelfReferencing) {
+									// Check if a temporary key was already created for that external key
+								if (isset($this->temporaryKeys[$externalValue])) {
+									$temporaryKey = $this->temporaryKeys[$externalValue];
+
+									// If not, create a new temporary key
+								} else {
+									$this->newKeysCounter++;
+									$temporaryKey = 'NEW_' . $this->newKeysCounter;
+									$this->temporaryKeys[$externalValue] = $temporaryKey;
+								}
+									// Use temporary key
+								$records[$i][$columnName] = $temporaryKey;
+
+								// If the relation is not self-referential, the mapping does not point to an existing value,
+								// unset it
+							} else {
+								unset($records[$i][$columnName]);
+							}
 						}
 					}
 				}
